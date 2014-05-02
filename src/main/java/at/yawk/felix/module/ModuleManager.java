@@ -72,6 +72,14 @@ public class ModuleManager {
     }
 
     /**
+     * Returns all modules.
+     */
+    @NonNull
+    public Stream<Object> all() {
+        return all(Object.class);
+    }
+
+    /**
      * Perform an action for each module of the given type. Execution is parallel if in a ForkJoinPool.
      */
     public <M> void forEach(@NonNull Class<M> clazz, @NonNull Consumer<M> action) {
@@ -159,8 +167,9 @@ public class ModuleManager {
      */
     private void registerModuleWithoutDependencies(@NonNull Object module, @NonNull ModuleProperties properties) {
         ModuleWrapper wrapper = new ModuleWrapper(module, properties);
-        Stream<Class<?>> classes =
-                FelixUtil.getSuperClasses(module.getClass()).filter(c -> !properties.getExcludedClasses().contains(c));
+        Stream<Class<?>> classes = FelixUtil.getSuperClasses(module.getClass())
+                // Object cannot be filtered
+                .filter(c -> c == Object.class || !properties.getExcludedClasses().contains(c));
 
         classes.parallel().forEach(clazz -> registerModule(wrapper, clazz));
 
