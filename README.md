@@ -5,6 +5,8 @@ Felix, a java 8 modularization framework
 
 Felix is a framework that allows easy and fast modularized coding in java 8.
 
+[![Build Status](http://ci.yawk.at/job/Felix/badge/icon)](http://ci.yawk.at/job/Felix/)
+
 Modules
 -------
 
