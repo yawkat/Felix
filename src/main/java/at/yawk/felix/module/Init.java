@@ -12,4 +12,11 @@ import java.lang.annotation.Target;
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Init {}
+public @interface Init {
+    public static int DEFAULT_PRIORITY = 0;
+
+    /**
+     * Methods with a lower priority (<) will be initialized first.
+     */
+    int priority() default DEFAULT_PRIORITY;
+}

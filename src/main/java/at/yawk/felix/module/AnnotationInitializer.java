@@ -2,6 +2,7 @@ package at.yawk.felix.module;
 
 import at.yawk.felix.FelixUtil;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.stream.Stream;
 
 /**
@@ -17,7 +18,8 @@ class AnnotationInitializer implements Initializer {
         FelixUtil.getSuperClasses(module.getClass())
                  .flatMap(clazz -> Stream.of(clazz.getDeclaredMethods()))
                  .filter(method -> method.isAnnotationPresent(Init.class))
-                 .forEach(method -> {
+                 .sorted(Comparator.comparingInt(m -> m.getAnnotation(Init.class).priority()))
+                 .forEachOrdered(method -> {
                      Class<?>[] parameters = method.getParameterTypes();
                      try {
                          method.setAccessible(true);

@@ -14,7 +14,13 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Subscribe {
+    /**
+     * Methods with a lower priority (<) will be called first.
+     */
     int priority() default EventHandler.DEFAULT_PRIORITY;
 
+    /**
+     * Whether concurrent calls are allowed.
+     */
     boolean parallel() default true;
 }
