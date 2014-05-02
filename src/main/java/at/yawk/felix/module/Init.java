@@ -16,7 +16,7 @@ public @interface Init {
     public static int DEFAULT_PRIORITY = 0;
 
     /**
-     * Methods with a lower priority (<) will be initialized first.
+     * Methods with a lower priority (&lt;) will be initialized first.
      */
     int priority() default DEFAULT_PRIORITY;
 }
