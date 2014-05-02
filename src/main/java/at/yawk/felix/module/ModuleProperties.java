@@ -1,6 +1,5 @@
 package at.yawk.felix.module;
 
-import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -33,17 +32,33 @@ public class ModuleProperties {
     }
 
     /**
+     * Create ModuleProperties with the given dependencies and excluded classes.
+     */
+    public static ModuleProperties create(Set<Class<?>> dependencies, Set<Class<?>> excludedClasses) {
+        return create(dependencies, excludedClasses, Collections.emptySet());
+    }
+
+    /**
      * The dependencies of this module.
      */
     private final Set<Class<?>> dependencies;
     /**
-     * What classes this module should NOT be registered as: The default behaviour would be registering this module
-     * as all its superclasses and interfaces.
+     * What classes this module should <i>not</i> be registered as: The default behaviour would be registering this
+     * module as all its superclasses and interfaces.
      */
     private final Set<Class<?>> excludedClasses;
+    /**
+     * The soft dependencies of this module. These are loaded <i>after</i> the module itself so they should not be
+     * relied upon in the init methods.
+     */
+    private final Set<Class<?>> softDependencies;
 
     public Set<Class<?>> getDependencies() {
         return Collections.unmodifiableSet(dependencies);
+    }
+
+    public Set<Class<?>> getSoftDependencies() {
+        return Collections.unmodifiableSet(softDependencies);
     }
 
     public Set<Class<?>> getExcludedClasses() {

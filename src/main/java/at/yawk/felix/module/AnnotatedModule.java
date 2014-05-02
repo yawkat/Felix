@@ -15,7 +15,19 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface AnnotatedModule {
+    /**
+     * Dependencies of this module. Will be loaded before initialization (but not necessarily before module
+     * construction!).
+     */
     Class[] dependencies() default {};
 
+    /**
+     * Soft dependencies of this module. Will be loaded after initialization.
+     */
+    Class[] softDependencies() default {};
+
+    /**
+     * Classes that this module should <i>not</i> be registered as.
+     */
     Class[] excludedFromRegistration() default {};
 }

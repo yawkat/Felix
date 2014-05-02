@@ -43,6 +43,7 @@ class AnnotatedPropertyDiscoveryStrategy implements PropertyDiscoveryStrategy {
 
     private static ModuleProperties toProperties(AnnotatedModule annotation) {
         return ModuleProperties.create(ImmutableSet.copyOf(annotation.dependencies()),
-                                       ImmutableSet.copyOf(annotation.excludedFromRegistration()));
+                                       ImmutableSet.copyOf(annotation.excludedFromRegistration()),
+                                       ImmutableSet.copyOf(annotation.softDependencies()));
     }
 }

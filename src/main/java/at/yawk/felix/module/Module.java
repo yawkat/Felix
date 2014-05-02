@@ -18,17 +18,19 @@ public abstract class Module implements InitializableModule {
     private final Lock dependencyLock = new ReentrantLock();
 
     private Thread dependencyListThread = null;
-    private Set<Class<?>> dependencies = null;
 
-    private Set<Class<?>> doListDependencies() {
+    private boolean dependenciesLoaded = false;
+    private final Set<Class<?>> dependencies = new HashSet<>();
+    private final Set<Class<?>> softDependencies = new HashSet<>();
+
+    private void doListDependencies() {
+        if (dependenciesLoaded) { return; }
         dependencyLock.lock();
         dependencyListThread = Thread.currentThread();
         try {
-            if (dependencies != null) { return dependencies; }
-
-            dependencies = new HashSet<>();
-            listDependencies();
-            return dependencies;
+            if (!dependenciesLoaded) {
+                listDependencies();
+            }
         } finally {
             dependencyListThread = null;
             dependencyLock.unlock();
@@ -36,12 +38,32 @@ public abstract class Module implements InitializableModule {
     }
 
     public final ModuleProperties getProperties() {
-        return ModuleProperties.create(doListDependencies());
+        doListDependencies();
+        return ModuleProperties.create(dependencies, Collections.emptySet(), softDependencies);
     }
 
+    /**
+     * Put all your require() and requireSoft() calls in here.
+     */
     protected void listDependencies() {}
 
+    /**
+     * Require a module as a dependency.
+     */
     protected final void require(Class<?> moduleType) {
+        checkRequire(moduleType);
+        dependencies.add(moduleType);
+    }
+
+    /**
+     * Require a module as a soft dependency, will be loaded after initialization.
+     */
+    protected final void requireSoft(Class<?> moduleType) {
+        checkRequire(moduleType);
+        softDependencies.add(moduleType);
+    }
+
+    private void checkRequire(Class<?> moduleType) {
         if (Thread.currentThread() != dependencyListThread) {
             if (dependencyListThread == null) {
                 throw new IllegalStateException("Can only require other modules inside listDependencies");
@@ -50,8 +72,6 @@ public abstract class Module implements InitializableModule {
                         "Can only require other modules from the thread listDependencies is called from");
             }
         }
-
-        dependencies.add(moduleType);
     }
 
     @Override

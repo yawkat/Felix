@@ -18,13 +18,14 @@ Modules
 - Multiple modules of the same type including java 8 parallel action execution
 - Easy providers
 - Easy initialization of modules
+- Class-based dependency mechanism including "soft" dependencies that will be loaded after initialization
 
 ### Usage
 
 #### Annotations
 
 ```Java
-@AnnotatedModule(dependencies = { OtherModule1.class, OtherModule2.class })
+@AnnotatedModule
 class MyModule {}
 ```
 
@@ -111,6 +112,13 @@ All registered modules will also be registered for their interfaces. This means 
 
 If you want to register a module but don't want to register it for one or more of its interfaces,
 you can use the `excludedFromRegistration` property of the `AnnotatedModule` annotation when declaring it.
+
+#### Dependencies
+
+```Java
+@AnnotatedModule(dependencies = { OtherModule1.class, OtherModule2.class }, softDependencies = OtherModule2.class)
+class MyModule {}
+```
 
 Events
 ------
