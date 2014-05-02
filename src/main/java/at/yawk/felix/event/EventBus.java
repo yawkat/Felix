@@ -1,7 +1,6 @@
 package at.yawk.felix.event;
 
 import at.yawk.felix.FelixUtil;
-import com.google.common.collect.Queues;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -22,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 public class EventBus {
     private final ExceptionHandler exceptionHandler;
 
-    private final ConcurrentMap<Class<?>, Queue<EventHandler<?>>> handlers = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Class<?>, Collection<EventHandler<?>>> handlers = new ConcurrentHashMap<>();
 
     private final ReadWriteLock bakedLock = new ReentrantReadWriteLock();
     private final Map<Class<?>, EventHandler[]> bakedHandlers = new HashMap<>();
@@ -140,9 +139,9 @@ public class EventBus {
     @NonNull
     private SubscribeHandle subscribe(@NonNull EventHandler<?> eventHandler, @NonNull Class<?> on) {
         // we do supertype recursion in the post method so we don't need it here
-        Queue<EventHandler<?>> handlerList =
-                handlers.computeIfAbsent(on, clazz -> Queues.synchronizedQueue(new PriorityQueue<EventHandler<?>>()));
-        handlerList.offer(eventHandler);
+        Collection<EventHandler<?>> handlerList =
+                handlers.computeIfAbsent(on, clazz -> Collections.synchronizedSet(new HashSet<EventHandler<?>>()));
+        handlerList.add(eventHandler);
         bake(on);
         return () -> {
             handlerList.remove(eventHandler);
@@ -151,8 +150,9 @@ public class EventBus {
     }
 
     private void bake(Class<?> eventType) {
-        Queue<EventHandler<?>> handlerQueue = handlers.get(eventType);
+        Collection<EventHandler<?>> handlerQueue = handlers.get(eventType);
         EventHandler[] handlerList = handlerQueue.toArray(new EventHandler[handlerQueue.size()]);
+        Arrays.sort(handlerList);
         bakedLock.writeLock().lock();
         try {
             bakedHandlers.put(eventType, handlerList);
