@@ -47,6 +47,20 @@ public class EventBusTest {
     }
 
     @Test
+    public void testUnsubscribe() {
+        EventBus bus = EventBus.create();
+        AtomicBoolean called = new AtomicBoolean(false);
+        bus.subscribe(new Object() {
+            @Subscribe
+            public void onEvent(Object event) {
+                called.set(false);
+            }
+        }).unsubscribe();
+        bus.post(new Object());
+        assertFalse(called.get());
+    }
+
+    @Test
     public void testSubscribeGuava() {
         EventBus bus = EventBus.create();
         AtomicBoolean called = new AtomicBoolean(false);

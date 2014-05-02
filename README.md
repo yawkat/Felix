@@ -146,8 +146,10 @@ class MyHandler {
 }
 
 EventBus bus = EventBus.create();
-bus.subscribe(new MyHandler());
+SubscribeHandle handle = bus.subscribe(new MyHandler());
 bus.post(new MyEvent("Hello World!"));
+// not required but possible
+handle.unsubscribe();
 ```
 
 ```Java
