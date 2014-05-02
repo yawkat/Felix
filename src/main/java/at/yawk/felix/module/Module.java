@@ -36,7 +36,7 @@ public abstract class Module implements InitializableModule {
     }
 
     public final ModuleProperties getProperties() {
-        return ModuleProperties.create(doListDependencies(), Collections.emptySet());
+        return ModuleProperties.create(doListDependencies());
     }
 
     protected void listDependencies() {}

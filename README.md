@@ -14,6 +14,7 @@ Modules
 - Anonymous modules
 - Possibility of adding custom module parsers (resource-driven etc)
 - Multiple modules of the same type including java 8 parallel action execution
+- Easy providers
 - Easy initialization of modules
 
 ### Usage
@@ -99,6 +100,15 @@ mm.registerModuleObject(new MyModule());
 // needs an empty constructor
 mm.registerModule(MyModule.class);
 ```
+
+#### Providers
+
+All registered modules will also be registered for their interfaces. This means that you can simply call
+`moduleManager.get(MyProviderInterface.class)` and it will return any registered module that implements
+`MyProviderInterface`.
+
+If you want to register a module but don't want to register it for one or more of its interfaces,
+you can use the `excludedFromRegistration` property of the `AnnotatedModule` annotation when declaring it.
 
 Events
 ------

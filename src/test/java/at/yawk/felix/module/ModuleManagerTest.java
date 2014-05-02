@@ -109,6 +109,25 @@ public class ModuleManagerTest {
         assertTrue(called.get());
     }
 
+    @Test
+    public void testProvide() {
+        ModuleManager mm = ModuleManager.create();
+        assertFalse(mm.has(Provider.class));
+        mm.registerModuleAnonymous(new Implementation());
+        assertTrue(mm.get(Provider.class).returnTrue());
+    }
+
+    private static interface Provider {
+        boolean returnTrue();
+    }
+
+    private static class Implementation implements Provider {
+        @Override
+        public boolean returnTrue() {
+            return true;
+        }
+    }
+
     @AnnotatedModule
     private static class CorrectModule {}
 
