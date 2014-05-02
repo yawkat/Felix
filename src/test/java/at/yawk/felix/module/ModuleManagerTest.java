@@ -65,6 +65,17 @@ public class ModuleManagerTest {
     }
 
     @Test
+    public void testRegisterAnonymous() throws Exception {
+        ModuleManager moduleManager = ModuleManager.create();
+        assertFalse(moduleManager.has(Object.class));
+
+        moduleManager.registerModuleAnonymous(new Object());
+        assertTrue(moduleManager.has(Object.class));
+        moduleManager.registerModuleAnonymous(new Object());
+        assertEquals(2, moduleManager.all().count());
+    }
+
+    @Test
     public void testInitializeInterface() {
         ModuleManager moduleManager = ModuleManager.create();
         CorrectModuleInit module = new CorrectModuleInit();

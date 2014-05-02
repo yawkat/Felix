@@ -152,6 +152,14 @@ public class ModuleManager {
     }
 
     /**
+     * Register a module with default settings and no dependencies. Primary use is creating modules from anonymous
+     * classes. No duplicate detection is performed.
+     */
+    public void registerModuleAnonymous(Object module) {
+        registerModuleWithoutDependencies(module, ModuleProperties.create());
+    }
+
+    /**
      * Find the module properties of a given module.
      */
     private Optional<ModuleProperties> findProperties(@NonNull Object module) {

@@ -11,6 +11,7 @@ Modules
 ### Features
 
 - A flexible annotation- or class-driven framework
+- Anonymous modules
 - Possibility of adding custom module parsers (resource-driven etc)
 - Multiple modules of the same type including java 8 parallel action execution
 - Easy initialization of modules
@@ -34,6 +35,18 @@ class MyModule extends Module {
         require(OtherModule2.class);
     }
 }
+```
+
+#### Anonymous
+
+```Java
+ModuleManager mm = ModuleManager.create();
+mm.registerModuleAnonymous(new MyProvider() {
+    @Override
+    public void sendMessage(String message) {
+        System.out.println(message);
+    }
+});
 ```
 
 #### Initialization

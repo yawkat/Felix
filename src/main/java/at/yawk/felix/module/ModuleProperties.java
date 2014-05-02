@@ -1,5 +1,6 @@
 package at.yawk.felix.module;
 
+import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -15,6 +16,22 @@ import lombok.EqualsAndHashCode;
 @AllArgsConstructor(staticName = "create")
 @EqualsAndHashCode
 public class ModuleProperties {
+    private static final ModuleProperties empty = create(Collections.emptySet());
+
+    /**
+     * Create an empty ModuleProperties instance.
+     */
+    public static ModuleProperties create() {
+        return empty;
+    }
+
+    /**
+     * Create ModuleProperties with the given dependencies.
+     */
+    public static ModuleProperties create(Set<Class<?>> dependencies) {
+        return create(dependencies, Collections.emptySet());
+    }
+
     /**
      * The dependencies of this module.
      */
