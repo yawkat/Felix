@@ -56,6 +56,20 @@ public class ModuleManager {
     }
 
     /**
+     * Returns whether a module of the given type exists or is currently being loaded.
+     */
+    public boolean hasOrLoading(@NonNull Class<?> clazz) {
+        return allUnloaded(clazz).findAny().isPresent();
+    }
+
+    /**
+     * Returns whether a module of the exact given type (no submodule) exists or is currently being loaded.
+     */
+    public boolean hasOrLoadingExact(@NonNull Class<?> clazz) {
+        return allUnloaded(clazz).filter(wrapper -> wrapper.of == clazz).findAny().isPresent();
+    }
+
+    /**
      * Returns any registered module of the given type or an empty optional if none was found.
      */
     @NonNull
@@ -68,7 +82,12 @@ public class ModuleManager {
      */
     @NonNull
     public <M> Stream<M> all(@NonNull Class<M> clazz) {
-        return modules.getOrDefault(clazz, Collections.emptySet()).stream().map(w -> (M) w.module);
+        return allUnloaded(clazz).filter(w -> w.valid).map(w -> (M) w.module.get());
+    }
+
+    @NonNull
+    private Stream<ModuleWrapper> allUnloaded(@NonNull Class<?> clazz) {
+        return modules.getOrDefault(clazz, Collections.emptySet()).stream();
     }
 
     /**
@@ -106,21 +125,8 @@ public class ModuleManager {
     /**
      * Attempt to register a module by class. The class needs to have an empty constructor.
      */
-    @Synchronized
     public void registerModule(Class<?> type, RegistrationProperties properties) {
-        if (!properties.getDuplicateFinder().register(this, type)) { return; }
-
-        Object module;
-        try {
-            // try to create a new instance
-            Constructor<?> constructor = type.getDeclaredConstructor();
-            constructor.setAccessible(true);
-            module = constructor.newInstance();
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalArgumentException(e);
-        }
-
-        registerModuleObject(module, properties);
+        loadModule(type, properties, Optional.empty());
     }
 
     /**
@@ -135,28 +141,16 @@ public class ModuleManager {
     /**
      * Register a module object.
      */
-    @Synchronized
     public void registerModuleObject(@NonNull Object module, RegistrationProperties registrationProperties) {
-        if (!registrationProperties.getDuplicateFinder().register(this, module)) { return; }
-
-        Optional<ModuleProperties> optionalProperties = findProperties(module);
-        ModuleProperties properties = optionalProperties.orElseThrow(() -> new IllegalArgumentException(
-                "No module properties found. Either annotate your module with @AnnotatedModule or extend the Module " +
-                "class."
-        ));
-        for (Class<?> dependency : properties.getDependencies()) {
-            registrationProperties.getDependencyResolutionStrategy()
-                                  .loadDependency(this, dependency, registrationProperties);
-        }
-        registerModuleWithoutDependencies(module, properties);
+        loadModule(module, registrationProperties, Optional.empty());
     }
 
     /**
      * Register a module with default settings and no dependencies. Primary use is creating modules from anonymous
      * classes. No duplicate detection is performed.
      */
-    public void registerModuleAnonymous(Object module) {
-        registerModuleWithoutDependencies(module, ModuleProperties.create());
+    public void registerModuleAnonymous(@NonNull Object module) {
+        loadModule(module, RegistrationProperties.anonymous, Optional.of(ModuleProperties.create()));
     }
 
     /**
@@ -171,42 +165,142 @@ public class ModuleManager {
     }
 
     /**
-     * Register a module. Dependency checks are not performed.
+     * Load a module by class.
+     *
+     * @param knownProperties If not empty, these properties will be used instead of the found ones.
      */
-    private void registerModuleWithoutDependencies(@NonNull Object module, @NonNull ModuleProperties properties) {
-        ModuleWrapper wrapper = new ModuleWrapper(module, properties);
-        Stream<Class<?>> classes = FelixUtil.getSuperClasses(module.getClass())
-                // Object cannot be filtered
-                .filter(c -> c == Object.class || !properties.getExcludedClasses().contains(c));
+    @Synchronized
+    private void loadModule(Class<?> moduleClass,
+                            RegistrationProperties properties,
+                            Optional<ModuleProperties> knownProperties) {
+        if (!properties.getDuplicateFinder().register(this, moduleClass)) { return; }
 
-        classes.parallel().forEach(clazz -> registerModule(wrapper, clazz));
+        ModuleWrapper wrapper = makeWrapper(moduleClass);
+        try {
+            // try to create a new instance
+            Constructor<?> constructor = moduleClass.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            Object module = constructor.newInstance();
 
-        initialize(module);
+            wrapper.module = Optional.of(module);
+
+            loadModule(wrapper, properties, knownProperties);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalArgumentException(e);
+        } finally {
+            finalizeWrapper(wrapper);
+        }
+    }
+
+    /**
+     * Load a module by object.
+     *
+     * @param knownProperties If not empty, these properties will be used instead of the found ones.
+     */
+    @Synchronized
+    private void loadModule(Object module,
+                            RegistrationProperties properties,
+                            Optional<ModuleProperties> knownProperties) {
+        if (!properties.getDuplicateFinder().register(this, module)) { return; }
+
+        // reserve wrapper space
+        ModuleWrapper wrapper = makeWrapper(module.getClass());
+        try {
+            wrapper.module = Optional.of(module);
+            loadModule(wrapper, properties, knownProperties);
+        } finally {
+            finalizeWrapper(wrapper);
+        }
+    }
+
+    /**
+     * Actually load a module including dependencies.
+     */
+    private void loadModule(ModuleWrapper wrapper,
+                            RegistrationProperties properties,
+                            Optional<ModuleProperties> knownProperties) {
+        // search properties
+        ModuleProperties moduleProperties = knownProperties.orElseGet(() -> {
+            // no known properties, search
+            return findProperties(wrapper.module.get()).orElseThrow(() -> {
+                // no properties found, not a module
+                return new IllegalArgumentException(
+                        "No module properties found. Either annotate your module with @AnnotatedModule or extend the " +
+                        "Module class."
+                );
+            });
+        });
+
+        wrapper.properties = Optional.of(moduleProperties);
+
+        // unregister excluded classes now that we know what they are
+        unregisterExcluded(wrapper);
+
+        // load dependencies (this may throw)
+        wrapper.properties.get().getDependencies().forEach(clazz -> {
+            properties.getDependencyResolutionStrategy().loadDependency(this, clazz, properties);
+        });
+
+        // dependencies loaded successfully, initialize
+        initialize(wrapper.module.get());
+
+        // no exceptions
+        wrapper.valid = true;
+    }
+
+    private ModuleWrapper makeWrapper(Class<?> of) {
+        ModuleWrapper wrapper = new ModuleWrapper(of);
+        FelixUtil.getSuperClasses(of).forEach(on -> {
+            // if no modules of the same class are registered yet we must create the list
+            Collection<ModuleWrapper> collected =
+                    modules.computeIfAbsent(on, c -> new CopyOnWriteArrayList<ModuleWrapper>());
+
+            collected.add(wrapper);
+        });
+        return wrapper;
+    }
+
+    private void finalizeWrapper(ModuleWrapper wrapper) {
+        // not loaded successfully
+        if (!wrapper.valid) {
+            FelixUtil.getSuperClasses(wrapper.of).forEach(on -> unregisterWrapper(wrapper, on));
+        }
+    }
+
+    private void unregisterExcluded(ModuleWrapper wrapper) {
+        wrapper.properties.get().getExcludedClasses().stream()
+                // keep object so all() works
+                .filter(c -> c != Object.class).forEach(on -> unregisterWrapper(wrapper, on));
+    }
+
+    private void unregisterWrapper(ModuleWrapper wrapper, Class<?> on) {
+        // must have been registered before so we can assume the mapping exists
+        modules.get(on).remove(wrapper);
     }
 
     private void initialize(Object module) {
         initializers.forEach(ini -> ini.initialize(this, module));
     }
 
-    /**
-     * Register a module for a type.
-     */
-    private void registerModule(ModuleWrapper module, Class<?> clazz) {
-        // this is assumed when accessing the modules map
-        assert clazz.isInstance(module.module) : module.module + " " + clazz;
-
-        // if no modules of the same class are registered yet we must create the list
-        Collection<ModuleWrapper> collected =
-                modules.computeIfAbsent(clazz, c -> new CopyOnWriteArrayList<ModuleWrapper>());
-
-        collected.add(module);
-    }
-
     @RequiredArgsConstructor
-    @EqualsAndHashCode(of = "module")
+    @EqualsAndHashCode(of = {"of", "module"})
     private class ModuleWrapper {
-        @NonNull private final Object module;
-        @NonNull private final ModuleProperties properties;
+        /**
+         * Base class
+         */
+        @NonNull private final Class<?> of;
+        /**
+         * Module, empty during registration
+         */
+        @NonNull private Optional<Object> module = Optional.empty();
+        /**
+         * Properties, empty during registration
+         */
+        @NonNull private Optional<ModuleProperties> properties = Optional.empty();
+        /**
+         * Only true after successful registration
+         */
+        @NonNull private boolean valid = false;
     }
 
 }

@@ -13,17 +13,32 @@ public interface DuplicateFinder {
     public static final DuplicateFinder IGNORE_DUPLICATE_CLASSES = new DuplicateFinder() {
         @Override
         public boolean register(ModuleManager moduleManager, Class<?> clazz) {
-            return !moduleManager.has(clazz);
+            return !moduleManager.hasOrLoading(clazz);
         }
 
         @Override
         public boolean register(ModuleManager moduleManager, Object module) {
-            if (register(moduleManager, module.getClass())) {
+            if (!moduleManager.hasOrLoadingExact(module.getClass())) {
                 return true;
             } else {
                 throw new IllegalStateException(
                         "A module of the type " + module.getClass() + " is already registered!");
             }
+        }
+    };
+    /**
+     * Simply ignore modules that have already been registered when trying to register them by class and allow
+     * duplicate modules when registering them directly (anonymous or object).
+     */
+    public static final DuplicateFinder IGNORE_DUPLICATE_CLASSES_ALLOW_DIRECT = new DuplicateFinder() {
+        @Override
+        public boolean register(ModuleManager moduleManager, Class<?> clazz) {
+            return !moduleManager.hasOrLoading(clazz);
+        }
+
+        @Override
+        public boolean register(ModuleManager moduleManager, Object module) {
+            return true;
         }
     };
 

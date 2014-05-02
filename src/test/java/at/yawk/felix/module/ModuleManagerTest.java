@@ -117,6 +117,14 @@ public class ModuleManagerTest {
         assertTrue(mm.get(Provider.class).returnTrue());
     }
 
+    @Test
+    public void testCircularDepend() {
+        ModuleManager mm = ModuleManager.create();
+        mm.registerModule(CircularModule1.class);
+        assertTrue(mm.has(CircularModule1.class));
+        assertTrue(mm.has(CircularModule2.class));
+    }
+
     private static interface Provider {
         boolean returnTrue();
     }
@@ -139,4 +147,10 @@ public class ModuleManagerTest {
             called = true;
         }
     }
+
+    @AnnotatedModule(dependencies = CircularModule2.class)
+    private static class CircularModule1 {}
+
+    @AnnotatedModule(dependencies = CircularModule1.class)
+    private static class CircularModule2 {}
 }

@@ -14,6 +14,8 @@ import lombok.experimental.Wither;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class RegistrationProperties {
     static RegistrationProperties defaults = new RegistrationProperties();
+    static RegistrationProperties anonymous =
+            defaults.withDuplicateFinder(DuplicateFinder.IGNORE_DUPLICATE_CLASSES_ALLOW_DIRECT);
 
     private DependencyResolutionStrategy dependencyResolutionStrategy = DependencyResolutionStrategy.REGISTER;
     @Wither(AccessLevel.PACKAGE) private DuplicateFinder duplicateFinder = DuplicateFinder.IGNORE_DUPLICATE_CLASSES;
