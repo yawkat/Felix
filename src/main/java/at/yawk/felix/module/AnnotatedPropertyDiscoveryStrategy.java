@@ -15,6 +15,7 @@ class AnnotatedPropertyDiscoveryStrategy implements PropertyDiscoveryStrategy {
 
     private AnnotatedPropertyDiscoveryStrategy() {}
 
+    @NonNull
     @Override
     public Optional<ModuleProperties> findProperties(@NonNull Object module) {
         // find the most specific properties

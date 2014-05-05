@@ -9,11 +9,10 @@ import java.lang.reflect.Method;
  * @author Jonas Konrad (yawkat)
  */
 class GuavaSubscribeFinderStrategy extends AnnotationEventHandlerFinderStrategy<com.google.common.eventbus.Subscribe> {
-    static final EventHandlerFinderStrategy instance =
-            new GuavaSubscribeFinderStrategy(com.google.common.eventbus.Subscribe.class);
+    static final EventHandlerFinderStrategy instance = new GuavaSubscribeFinderStrategy();
 
-    GuavaSubscribeFinderStrategy(Class marker) {
-        super(marker);
+    GuavaSubscribeFinderStrategy() {
+        super(com.google.common.eventbus.Subscribe.class);
     }
 
     @Override

@@ -63,6 +63,7 @@ public class EventBus {
         }
     }
 
+    @SuppressWarnings({"unchecked", "deprecation"})
     private <Event> Event doPost(@NonNull Event event, boolean parallel) {
         // for all superclasses as well
         // as priorities are not shared across event types anyway we can use parallel without any problems.
@@ -79,6 +80,7 @@ public class EventBus {
                             exceptionHandler.onException(event, t, handler);
                         } catch (Throwable u) {
                             // we can't do much more
+                            //noinspection CallToPrintStackTrace
                             u.printStackTrace();
                         }
                     }
@@ -140,7 +142,7 @@ public class EventBus {
     private SubscribeHandle subscribe(@NonNull EventHandler<?> eventHandler, @NonNull Class<?> on) {
         // we do supertype recursion in the post method so we don't need it here
         Collection<EventHandler<?>> handlerList =
-                handlers.computeIfAbsent(on, clazz -> Collections.synchronizedSet(new HashSet<EventHandler<?>>()));
+                handlers.computeIfAbsent(on, clazz -> Collections.synchronizedSet(new HashSet<>()));
         handlerList.add(eventHandler);
         bake(on);
         return () -> {

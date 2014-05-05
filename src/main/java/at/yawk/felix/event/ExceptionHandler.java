@@ -9,7 +9,9 @@ public interface ExceptionHandler {
     /**
      * Default implementation that uses printStackTrace to print the exception to console.
      */
+    @SuppressWarnings("Convert2Lambda")
     public static final ExceptionHandler PRINT_TRACE = new ExceptionHandler() {
+        @SuppressWarnings("CallToPrintStackTrace")
         @Override
         public <Event> void onException(Event event, Throwable throwable, EventHandler<? super Event> handler) {
             throwable.printStackTrace();

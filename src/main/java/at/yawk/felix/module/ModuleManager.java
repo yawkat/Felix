@@ -80,6 +80,7 @@ public class ModuleManager {
     /**
      * Returns all modules of the given type.
      */
+    @SuppressWarnings("unchecked")
     @NonNull
     public <M> Stream<M> all(@NonNull Class<M> clazz) {
         return allUnloaded(clazz).filter(w -> w.valid).map(w -> (M) w.module.get());
@@ -253,18 +254,19 @@ public class ModuleManager {
         });
     }
 
+    @SuppressWarnings("deprecation")
     private ModuleWrapper makeWrapper(Class<?> of) {
         ModuleWrapper wrapper = new ModuleWrapper(of);
         FelixUtil.getSuperClasses(of).forEach(on -> {
             // if no modules of the same class are registered yet we must create the list
-            Collection<ModuleWrapper> collected =
-                    modules.computeIfAbsent(on, c -> new CopyOnWriteArrayList<ModuleWrapper>());
+            Collection<ModuleWrapper> collected = modules.computeIfAbsent(on, c -> new CopyOnWriteArrayList<>());
 
             collected.add(wrapper);
         });
         return wrapper;
     }
 
+    @SuppressWarnings("deprecation")
     private void finalizeWrapper(ModuleWrapper wrapper) {
         // not loaded successfully
         if (!wrapper.valid) {
@@ -305,7 +307,7 @@ public class ModuleManager {
         /**
          * Only true after successful registration
          */
-        @NonNull private boolean valid = false;
+        private boolean valid = false;
     }
 
 }

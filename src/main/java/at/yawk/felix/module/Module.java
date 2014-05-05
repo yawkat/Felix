@@ -30,6 +30,7 @@ public abstract class Module implements InitializableModule {
         try {
             if (!dependenciesLoaded) {
                 listDependencies();
+                dependenciesLoaded = true;
             }
         } finally {
             dependencyListThread = null;

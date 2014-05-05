@@ -12,7 +12,6 @@ public class FelixUtil {
     /**
      * Return all superclasses and interfaces of the given type, including the type itself.
      */
-    @Deprecated
     public static Stream<Class<?>> getSuperClasses(@Nullable Class<?> of) {
         // Classes like Object might be in there multiple times so we filter them
         return getSuperClasses0(of).distinct();
@@ -21,6 +20,7 @@ public class FelixUtil {
     /**
      * Return all superclasses and interfaces of the given type, including the type itself. May contain duplicates.
      */
+    @SuppressWarnings("deprecation")
     private static Stream<Class<?>> getSuperClasses0(@Nullable Class<?> of) {
         if (of == null) { return Stream.empty(); }
         // self

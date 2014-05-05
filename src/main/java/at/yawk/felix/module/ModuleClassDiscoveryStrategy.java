@@ -13,6 +13,7 @@ class ModuleClassDiscoveryStrategy implements PropertyDiscoveryStrategy {
 
     private ModuleClassDiscoveryStrategy() {}
 
+    @NonNull
     @Override
     public Optional<ModuleProperties> findProperties(@NonNull Object module) {
         return Optional.of(module).filter(m -> m instanceof Module) // check if this is actually a module

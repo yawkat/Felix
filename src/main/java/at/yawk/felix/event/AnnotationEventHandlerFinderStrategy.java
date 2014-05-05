@@ -37,7 +37,9 @@ abstract class AnnotationEventHandlerFinderStrategy<A extends Annotation> implem
 
     private final Class<A> marker;
 
+    @NonNull
     @Override
+    @SuppressWarnings("deprecation")
     public Stream<EventHandler<?>> findEventHandlers(@NonNull Object in) {
         Stream<Class<?>> classes = FelixUtil.getSuperClasses(in.getClass());
         return classes.flatMap(c -> Stream.of(c.getDeclaredMethods()))

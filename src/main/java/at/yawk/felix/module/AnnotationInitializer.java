@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 class AnnotationInitializer implements Initializer {
     static final Initializer instance = new AnnotationInitializer();
 
+    @SuppressWarnings("deprecation")
     @Override
     public void initialize(ModuleManager moduleManager, Object module) {
         FelixUtil.getSuperClasses(module.getClass())
