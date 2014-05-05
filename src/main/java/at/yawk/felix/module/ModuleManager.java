@@ -246,6 +246,11 @@ public class ModuleManager {
 
         // no exceptions
         wrapper.valid = true;
+
+        // load soft dependencies (this may throw)
+        wrapper.properties.get().getSoftDependencies().forEach(clazz -> {
+            properties.getDependencyResolutionStrategy().loadDependency(this, clazz, properties);
+        });
     }
 
     private ModuleWrapper makeWrapper(Class<?> of) {
