@@ -5,8 +5,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import lombok.NonNull;
@@ -23,8 +21,7 @@ public class EventBus {
 
     private final ConcurrentMap<Class<?>, Collection<EventHandler<?>>> handlers = new ConcurrentHashMap<>();
 
-    private final ReadWriteLock bakedLock = new ReentrantReadWriteLock();
-    private final Map<Class<?>, EventHandler[]> bakedHandlers = new HashMap<>();
+    private final Map<Class<?>, EventHandler[]> bakedHandlers = new ConcurrentHashMap<>();
 
     private final List<EventHandlerFinderStrategy> discoveryStrategies = new CopyOnWriteArrayList<>();
 
@@ -47,54 +44,47 @@ public class EventBus {
     }
 
     /**
-     * Post an event in a parallel mode. If we are in a ForkJoinPool, event processing will be done across its
-     * threads. Priorities might not be honoured.
+     * Post an event in a parallel mode. If we are in a ForkJoinPool, event processing will be done across its threads.
+     * Priorities might not be honoured.
      */
     public <Event> Event postParallel(@NonNull Event event) {
         return post(event, true);
     }
 
     private <Event> Event post(@NonNull Event event, boolean parallel) {
-        bakedLock.readLock().lock();
-        try {
-            return doPost(event, parallel);
-        } finally {
-            bakedLock.readLock().unlock();
-        }
+        return doPost(event, parallel);
     }
 
     @SuppressWarnings({"unchecked", "deprecation"})
     private <Event> Event doPost(@NonNull Event event, boolean parallel) {
-        // for all superclasses as well
-        // as priorities are not shared across event types anyway we can use parallel without any problems.
-        FelixUtil.getSuperClasses(event.getClass()).parallel().forEach(type -> {
-            EventHandler[] list = bakedHandlers.get(type);
-            // check if we actually have any handlers
-            if (list != null) {
-                // the action (consume, handle any errors)
-                Consumer<EventHandler<? super Event>> action = handler -> {
-                    try {
-                        handler.getHandler().consume(event);
-                    } catch (Throwable t) {
-                        try {
-                            exceptionHandler.onException(event, t, handler);
-                        } catch (Throwable u) {
-                            // we can't do much more
-                            //noinspection CallToPrintStackTrace
-                            u.printStackTrace();
-                        }
-                    }
-                };
-                Stream<EventHandler> stream = Stream.of(list);
-                if (parallel) {
-                    // ignore priority
-                    stream.parallel().forEach((Consumer) action);
-                } else {
-                    // follow priority
-                    stream.sequential().forEachOrdered((Consumer) action);
+        // the action (consume, handle any errors)
+        Consumer<EventHandler<? super Event>> action = handler -> {
+            try {
+                handler.getHandler().consume(event);
+            } catch (Throwable t) {
+                try {
+                    exceptionHandler.onException(event, t, handler);
+                } catch (Throwable u) {
+                    // we can't do much more
+                    //noinspection CallToPrintStackTrace
+                    u.printStackTrace();
                 }
             }
+        };
+        // for all superclasses as well
+        // as priorities are not shared across event types anyway we can use parallel without any problems.
+        Stream<EventHandler> handlers = FelixUtil.getSuperClasses(event.getClass()).flatMap(type -> {
+            EventHandler[] list = bakedHandlers.get(type);
+            // check if we actually have any handlers
+            return list == null ? Stream.empty() : Stream.of(list);
         });
+        if (parallel) {
+            // ignore priority
+            handlers.parallel().forEach((Consumer) action);
+        } else {
+            // follow priority
+            handlers.sequential().forEachOrdered((Consumer) action);
+        }
         return event;
     }
 
@@ -141,8 +131,8 @@ public class EventBus {
     @NonNull
     private SubscribeHandle subscribe(@NonNull EventHandler<?> eventHandler, @NonNull Class<?> on) {
         // we do supertype recursion in the post method so we don't need it here
-        Collection<EventHandler<?>> handlerList =
-                handlers.computeIfAbsent(on, clazz -> Collections.synchronizedSet(new HashSet<>()));
+        Collection<EventHandler<?>> handlerList = handlers.computeIfAbsent(on,
+                                                                           clazz -> Collections.synchronizedSet(new HashSet<>()));
         handlerList.add(eventHandler);
         bake(on);
         return () -> {
@@ -155,11 +145,6 @@ public class EventBus {
         Collection<EventHandler<?>> handlerQueue = handlers.get(eventType);
         EventHandler[] handlerList = handlerQueue.toArray(new EventHandler[handlerQueue.size()]);
         Arrays.sort(handlerList);
-        bakedLock.writeLock().lock();
-        try {
-            bakedHandlers.put(eventType, handlerList);
-        } finally {
-            bakedLock.writeLock().unlock();
-        }
+        bakedHandlers.put(eventType, handlerList);
     }
 }
