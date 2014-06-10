@@ -69,7 +69,7 @@ class MyModule {
 ```Java
 @AnnotatedModule
 class MyModule implements InitializableModule {
-    @Subscribe
+    @Init
     public void initialize(ModuleManager mm) {}
 }
 ```
