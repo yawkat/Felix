@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  *
  * @author Jonas Konrad (yawkat)
  */
-@Target(ElementType.METHOD)
+@Target({ ElementType.METHOD, ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Init {
     public static int DEFAULT_PRIORITY = 0;

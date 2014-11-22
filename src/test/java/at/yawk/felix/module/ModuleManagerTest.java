@@ -110,6 +110,14 @@ public class ModuleManagerTest {
     }
 
     @Test
+    public void testInitializeAnnotation3() {
+        ModuleManager moduleManager = ModuleManager.create();
+        CorrectModuleWithFieldInit module = new CorrectModuleWithFieldInit();
+        moduleManager.registerModuleObject(module);
+        assertNotNull(module.moduleManager);
+    }
+
+    @Test
     public void testProvide() {
         ModuleManager mm = ModuleManager.create();
         assertFalse(mm.has(Provider.class));
@@ -153,4 +161,8 @@ public class ModuleManagerTest {
 
     @AnnotatedModule(dependencies = CircularModule1.class)
     private static class CircularModule2 {}
+
+    private static class CorrectModuleWithFieldInit extends CorrectModule {
+        @Init private ModuleManager moduleManager;
+    }
 }
