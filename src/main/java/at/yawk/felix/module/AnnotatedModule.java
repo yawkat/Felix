@@ -10,8 +10,10 @@ import java.lang.annotation.Target;
  * <p>
  * Classes with this annotation (and their subclasses) can be used by ModuleManager.
  *
+ * @deprecated Replaced with @Module, @Dependency and @Register
  * @author Jonas Konrad (yawkat)
  */
+@Deprecated
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface AnnotatedModule {

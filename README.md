@@ -25,7 +25,7 @@ Modules
 #### Annotations
 
 ```Java
-@AnnotatedModule
+@Module
 class MyModule {}
 ```
 
@@ -56,7 +56,7 @@ mm.registerModuleAnonymous(new MyProvider() {
 #### Initialization
 
 ```Java
-@AnnotatedModule
+@Module
 class MyModule {
     @Init
     public void doWhatever() {}
@@ -67,7 +67,7 @@ class MyModule {
 ```
 
 ```Java
-@AnnotatedModule
+@Module
 class MyModule implements InitializableModule {
     @Init
     public void initialize(ModuleManager mm) {}
@@ -116,7 +116,10 @@ you can use the `excludedFromRegistration` property of the `AnnotatedModule` ann
 #### Dependencies
 
 ```Java
-@AnnotatedModule(dependencies = { OtherModule1.class, OtherModule2.class }, softDependencies = OtherModule2.class)
+@Module
+@Dependency(OtherModule1.class)
+@Dependency(OtherModule2.class)
+@Dependency(value = OtherModule3.class, soft = true)
 class MyModule {}
 ```
 

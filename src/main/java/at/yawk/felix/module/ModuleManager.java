@@ -32,6 +32,7 @@ public class ModuleManager {
 
     {
         discoveryStrategies.add(AnnotatedPropertyDiscoveryStrategy.instance);
+        discoveryStrategies.add(AnnotatedPropertyDiscoveryStrategy2.instance);
         discoveryStrategies.add(ModuleClassDiscoveryStrategy.instance);
 
         initializers.add(AnnotationInitializer.instance);
